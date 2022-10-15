@@ -2,7 +2,6 @@
 title: PKI
 author_1: "Héctor Toral Pallás (798095)"
 author_2: "Darío Marcos Casalé (795306)"
-key: c3c43ef48fb7bfac
 ---
 
 # PKI
@@ -51,7 +50,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -keyout ca.key -out ca.crt
 ```
 La ventaja de este es que no tendremos que rellenar la información de la CA, ya que se generará de forma automática.
 ```bash
-openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -keyout ca.key -out ca.crt -subj "/CN=www.modelCA.com/O=Model CA LTD./C=US" -passout pass:c3c43ef48fb7bfac
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -keyout ca.key -out ca.crt -subj "/CN=www.modelCA.com/O=Model CA LTD./C=US" -passout pass:password
 ```
 
 ### Output
