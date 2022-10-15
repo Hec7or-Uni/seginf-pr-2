@@ -139,7 +139,7 @@ Para generar una solicitud de firma de certificado el comando a usar es similar 
 - `-x509` indica que se generará un certificado autofirmado y sin esta opción se generará una solicitud de firma de certificado.
 
 ```bash
-openssl req -newkey rsa:2048 -sha256 -keyout server.key -out server.csr -subj "/CN=www.unizar2022.com/O=Unizar2022 Inc./C=US" -passout pass:dees
+openssl req -newkey rsa:2048 -sha256 -keyout server.key -out server.csr -subj "/CN=www.unizar2022.com/O=Unizar2022 Inc./C=US" -passout pass:password
 ```
 
 ### Output
@@ -207,8 +207,8 @@ docker exec -it <container_id> bash
 Una vez realizados los pasos previos, debemos de activar el módulo `ssl` y los sitios que queremos accesibles mediante nuestro servidor `apache2`:
 
 ```bash
-a2enmod ssl #  Enable the SSL module
-a2ensite bank32_apache_ssl #  Enable the sites described in this file
+a2enmod ssl  # Enable the SSL module
+a2ensite bank32_apache_ssl  # Enable the sites described in this file
 ```
 
 Si tenemos algún error con el servidor apache hemos dejado algunos comandos de utilidad al final de esta sección.
@@ -232,8 +232,8 @@ cp bank32_apache_ssl.conf unizar22_apache_ssl.conf
 Copiamos el certificado y la clave privada en el directorio `/certs` dentro del contenedor:
 
 ```bash
-cp /modules/server.crt /certs
-cp /modules/server.key /certs
+cp /volumes/server.crt /certs
+cp /volumes/server.key /certs
 ```
 
 Editamos el fichero `unizar22_apache_ssl.conf` y cambiamos las siguientes líneas:
@@ -266,8 +266,8 @@ ServerName localhost
 Al igual que en el caso anterior, activamos el sitio `unizar22_apache_ssl`:
 
 ```bash
-a2enmod ssl #  Enable the SSL module
-a2ensite unizar22_apache_ssl #  Enable the sites described in this file
+a2enmod ssl  # Enable the SSL module
+a2ensite unizar22_apache_ssl  # Enable the sites described in this file
 ```
 
 Si tenemos algún error con el servidor apache hemos dejado algunos comandos de utilidad al final de esta sección.
@@ -301,12 +301,103 @@ service apache2 restart
 ```
 
 ## Tarea 5
-Lanzamiento de un ataque Man-In-The-Middle (MITM).
+Lanzamiento de un ataque Man-In-The-Middle (MITM)."
+
+Para realizar este ataque, primero debemos de generar un certificado autofirmado para el servidor `apache2` para no perder mucho tiempo, reutilizaremos el certificado del banco `bank32.com`.
+
+Crearems un fichero `mitm-ssl.conf` en el directorio `/etc/apache2/sites-available` con el siguiente contenido:
+
+```bash
+touch /etc/apache2/sites-available/mitm-ssl.conf
+```
+
+```
+<VirtualHost *:443>
+  DocumentRoot /var/www/bank32
+  ServerName hotasm.vercel.app
+  DirectoryIndex index.html
+  SSLEngine On
+  SSLCertificateFile /certs/bank32.crt
+  SSLCertificateKeyFile /certs/bank32.key
+</VirtualHost>
+
+# Set the following global entry to suppress an annoying warning message
+ServerName hotasm.vercel.app
+```
+
+De nuevo, es necesario activar el módulo de SSL y activar el nuevo fichero de configuración SSL para la página maliciosa:
+
+```bash
+a2enmod ssl  # Enable the SSL module
+a2ensite mitm-ssl  # Enable the sites described in this file
+```
+
+Para poder observar los resultados, debemos de modificar el fichero `/etc/hosts` del sistema operativo de la máquina anfitriona para que apunte a la dirección IP del servidor `apache2`, de esta manera podremos acceder a la página maliciosa desde el navegador.
+
+```bash
+10.9.0.80 hotasm.vercel.app
+```
+
+A la hora de acceder a la página maliciosa, se puede observar que el navegador indica que la página es no segura
+
+![MITM Image](https://imgur.com/a/N72pmVV)
 
 ## Tarea 6
 Lanzamiento de un ataque Man-In-The-Middle con una CA comprometida.
 
+1. Generar un CSR cuyo dominio sea el de la página objetivo (en este caso `hotasm.vercal.app`)
+
+```bash
+openssl req -newkey rsa:2048 -sha256 -keyout mitm-server.key -out mitm-server.csr -subj "/CN=hotasm.vercal.app/O=hotasm.vercal.app/C=US" -passout pass:password
+```
+
+2. Generar el certificado con la CA comprometida
+```bash
+openssl ca -config ./openssl.cnf -policy policy_anything -md sha256 -days 3650 -in mitm-server.csr -out mitm-server.crt -batch -cert ca.crt -keyfile ca.key
+```
+
+3. Añadir el certificado al servidor web malicioso y modificar la configuración SSL para que haga uso del certificado falso
+
+```bash	
+cp image_www/mitm-server.crt /certs
+cp /volumes/mitm-server.key /certs
+```
+
+Modificamos la configuracion del servidor web malicioso para que haga uso del certificado falso `mitm-server.*`:
+
+```bash
+nano /etc/apache2/sites-available/mitm-ssl.conf
+```
+
+```
+<VirtualHost *:443>
+  DocumentRoot /var/www/bank32
+  ServerName hotasm.vercel.app
+  DirectoryIndex index.html
+  SSLEngine On
+  SSLCertificateFile /certs/mitm-server.crt  
+  SSLCertificateKeyFile /certs/mitm-server.key
+</VirtualHost>
+
+# Set the following global entry to suppress an annoying warning message
+ServerName hotasm.vercel.app
+```
+
+De nuevo, es necesario activar el módulo de SSL y activar el nuevo fichero de configuración SSL para la página maliciosa:
+
+```bash
+a2enmod ssl  # Enable the SSL module
+a2ensite mitm-ssl  # Enable the sites described in this file
+```
+
+4. Al acceder a la página web falsa desde el navegador, no saltará ninguna alerta.
+
+
+Este experimento se puede realizar para cualquier página web, basta con repetir los pasos con el nombre de dominio de la página a la que se quiere acceder.
+
 ## Conclusiones
+
+Tras haber realizado la práctica y haber podido manipular el tráfico de una página web, podemos concluir que es posible realizar ataques de mitm en páginas web seguras, ya que el navegador no comprueba la validez del certificado de la página web, sino que lo hace con la CA que emitió el certificado. Por lo tanto, si la CA es comprometida, el certificado de la página web también lo hará.
 
 ## Referencias
 
