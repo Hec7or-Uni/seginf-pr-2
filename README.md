@@ -217,6 +217,10 @@ Desde firefox podemos hacerlo desde `Opciones -> Privacidad y seguridad -> Certi
 
 Es importante que a la hora de importar el certificado, seleccionemos la opción: `Confíe en esta CA para identificar los sitios web`.
 
+#### Output
+![MITM Image](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/bank32-insecure.png)
+![MITM Image](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/bank32-secure.png)
+
 ---
 
 ### unizar22.com
