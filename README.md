@@ -5,18 +5,72 @@ author_2: "Darío Marcos Casalé (795306)"
 key: c3c43ef48fb7bfac
 ---
 
-
-
 # PKI
 
-## Tarea 1
-Convertirse en una autoridad de certificación (CA).
+La infraestructura de claves públicas (PKI) es un sistema que permite a los usuarios y a las organizaciones generar, almacenar, distribuir y revocar claves públicas y certificados digitales. La PKI es un sistema de confianza que permite a los usuarios y a las organizaciones autenticarse y cifrar datos de forma segura.
 
+## Preparación del entorno
+
+Para la realización de esta práctica hay que añadir al fichero `/etc/hosts` las siguientes líneas:
+
+```
+10.9.0.80 www.bank32.com www.bank32a.com www.bank32a.com www.bank32w.com
+10.9.0.80 www.unizar22.com www.unizar22a.com www.unizar22b.com
+```
+
+Como vamos a realizar modificaciones en la configuración de OpenSSL realizaremos una copia de los ficheros de configuración originales y trabajaremos con ellos.
+
+```
+cp /usr/lib/ssl/openssl.cnf ./openssl.cnf
+```
+
+Una vez hecha la copia de seguridad, procederemos a descomentar la linea `#unique_subject = no...` del fichero `./openssl.cnf` para permitir que se puedan emitir certificados con el mismo subject.
+
+A continuación, crearemos un directorio para almacenar los certificados y claves que se vayan generando siguiendo la siguiente estructura:
+
+```bash
+mkdir -p ./demoCA/{certs,crl,newcerts}
+touch ./demoCA/index.txt
+echo 1000 > ./demoCA/serial
+```
+
+Ahora que tenemos el entorno preparado, procederemos a la generación de los certificados.
+
+## Tarea 1
+
+### Creación de la CA
+
+Para obtener una contraseña segura podemos usar el siguiente comando:
+```bash 
+openssl rand -hex 16
+```
+
+Para la **creación de la CA**, ejecutaremos uno de los siguientes comandos:
 ```bash
 openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -keyout ca.key -out ca.crt
 ```
+La ventaja de este es que no tendremos que rellenar la información de la CA, ya que se generará de forma automática.
+```bash
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -keyout ca.key -out ca.crt -subj "/CN=www.modelCA.com/O=Model CA LTD./C=US" -passout pass:c3c43ef48fb7bfac
+```
 
-#### What part of the certificate indicates this is a CA’s certificate?
+### Output
+
+`ca.crt` es el certificado de la CA. <br>
+`ca.key` es la clave privada de la CA.
+
+Podemos usar los siguientes comandos para ver la información de los certificados:
+
+```bash
+openssl x509 -in ca.crt -text -noout
+```
+
+```bash
+openssl rsa -in ca.key -text -noout
+```
+
+### Pregunta 1
+¿Qué parte del certificado indica que se trata de un certificado de CA?
 
 ```bash
 openssl x509 -in ca.crt -text -noout
@@ -27,14 +81,21 @@ X509v3 Basic Constraints: critical
     CA:TRUE
 ```
 
-#### What part of the certificate indicates this is a self-signed certificate?
+### Pregunta 2
+¿Qué parte del certificado indica que es un certificado autofirmado?
 
 ```bash
 openssl x509 -in ca.crt -text -noout
 ```
 
+```
+Issuer: C = AU, ST = Some-State, O = Internet Widgits Pty Ltd
+Subject: C = AU, ST = Some-State, O = Internet Widgits Pty Ltd
+```	
+Como podemos ver, el emisor y el sujeto son la misma entidad. Por lo tanto, es un certificado autofirmado.
 
-#### In the RSA algorithm, we have a `public exponent` e, a `private exponent` d, a `modulus` n, and `two secret numbers` p and q, such that n = pq. Please identify the values for these elements in your certificate and key files.
+### Pregunta 3
+Identifique los valores de los elementos que forman parte del algoritmo RSA en sus archivos de certificados y claves.
 
 Para obtener los valores involucrados en el algoritmo RSA se ha ejecutado el siguiente comando:
 ```bash
@@ -67,13 +128,36 @@ publicExponent: 65537 (0x10001)
 ```
 
 ## Tarea 2
-Generación de una solicitud de certificado para su servidor web.
+Generación de un certificado para un servidor web.
+
+En primer lugar, necesita generar una solicitud de firma de certificado `CSR`, que básicamente incluye la clave pública y la información de identidad de la empresa. La CSR se enviará a la CA, que verificará
+verificará la información de identidad de la solicitud y generará un certificado.
+
+### Generar una solicitud de firma de certificado (CSR)
+
+Para generar una solicitud de firma de certificado el comando a usar es similar al de la CA autofirmada pero sin la opción `-x509`
+- `-x509` indica que se generará un certificado autofirmado y sin esta opción se generará una solicitud de firma de certificado.
 
 ```bash
-openssl req -newkey rsa:2048 -sha256 -keyout server.key -out server.csr -subj "/CN=www.unizar2022.com/O=Bank32 Inc./C=US" -passout pass:dees
+openssl req -newkey rsa:2048 -sha256 -keyout server.key -out server.csr -subj "/CN=www.unizar2022.com/O=Unizar2022 Inc./C=US" -passout pass:dees
 ```
 
-Se añadieron 2 nombres de dominio adicionales al certificado:
+### Output
+
+`server.csr` es la petición de certificado del servidor. <br>
+`server.key` es la clave privada del servidor.
+
+Podemos usar los siguientes comandos para ver la información de los certificados:
+
+```bash
+openssl req -in server.csr -text -noout
+```
+
+```bash
+openssl rsa -in server.key -text -noout
+```
+
+### Generar una solicitud de firma de certificado (CSR) con varios nombre de dominio
 
 ```bash
 openssl req -newkey rsa:2048 -sha256 \
@@ -84,34 +168,136 @@ openssl req -newkey rsa:2048 -sha256 \
 ```
 
 Puede observarse que se han añadido el campo de extensiones al certificado:
+
+```bash
+openssl req -in server.csr -text -noout
+```
+
 ```
 Requested Extensions:
     X509v3 Subject Alternative Name: 
         DNS:www.unizar2022.com, DNS:www.unizar2022A.com, DNS:www.unizar2022B.com
 ```
 ## Tarea 3
-Generar un certificado para su servidor
+Generación de un certificado para un servidor web con una CA propia. (certificado autofirmado)
 
-En primer lugar se ha permitido copiar extensiones del certificado añadiendo la opción `copy_extensions = copy`. Seguidamente se genera el certificado con el  siguiente comando:
+En primer lugar se ha permitido copiar extensiones del certificado añadiendo la opción `copy_extensions = copy`. Seguidamente se genera un certificado autofirmado con la CA creada en la [Tarea 1](#tarea-1).
+
 ```bash
-openssl ca -config myCA_openssl.cnf -policy policy_anything -md sha256 -days 3650 -in server.csr -out server.crt -batch -cert ca.crt -keyfile ca.key
+openssl ca -config ./openssl.cnf -policy policy_anything -md sha256 -days 3650 -in server.csr -out server.crt -batch -cert ca.crt -keyfile ca.key
 ```
+
+### Output
+
+Puedes usar los comandos de la [Tarea 2](#tarea-2) para ver la información de los certificados.
 
 ## Tarea 4
 Despliegue de un certificado en un sitio web HTTPS que usa un servidor Apache.
+
+El despliegue de las webs lo realizaremos en el contenedor proporcionado ya que trae instalado el servidor web `apache2` y `openssl`.
+
+Para ello primero debemos de entrar en el contenedor:
 
 ```bash
 docker exec -it <container_id> bash
 ```
 
-modificar dentro de `etc/hosts` la siguientes líneas:
-```
-10.9.0.80 www.bank32.com www.bank32a.com www.bank32a.com www.bank32w.com
-```
+### Bank32.com
+
+Una vez realizados los pasos previos, debemos de activar el módulo `ssl` y los sitios que queremos accesibles mediante nuestro servidor `apache2`:
 
 ```bash
 a2enmod ssl #  Enable the SSL module
 a2ensite bank32_apache_ssl #  Enable the sites described in this file
+```
+
+Si tenemos algún error con el servidor apache hemos dejado algunos comandos de utilidad al final de esta sección.
+
+Una vez activados los sitios, navegaremos a la dirección `https://www.bank32.com` y veremos que nos aparece un mensaje de error de seguridad. Esto es debido a que el certificado que hemos generado no es de una CA reconocida por el navegador. Para solucionarlo debemos de importar el certificado en el navegador.
+Desde firefox podemos hacerlo desde `Opciones -> Privacidad y seguridad -> Certificados -> Ver certificados -> Autoridades de certificación -> Importar -> Seleccionar el certificado -> Aceptar`.
+
+Es importante que a la hora de importar el certificado, seleccionemos la opción: `Confíe en esta CA para identificar los sitios web`.
+
+---
+
+### unizar22.com
+
+Creamos una copia de la configuración del sitio `bank32_apache_ssl` y la renombramos a `unizar22_apache_ssl`:
+
+```bash
+cd /etc/apache2/sites-available
+cp bank32_apache_ssl.conf unizar22_apache_ssl.conf
+```
+
+Copiamos el certificado y la clave privada en el directorio `/certs` dentro del contenedor:
+
+```bash
+cp /modules/server.crt /certs
+cp /modules/server.key /certs
+```
+
+Editamos el fichero `unizar22_apache_ssl.conf` y cambiamos las siguientes líneas:
+
+```bash	
+<VirtualHost *:443>
+  DocumentRoot /var/www/unizar22
+  ServerName www.unizar22.com
+  ServerAlias www.unizar22a.com
+  ServerAlias www.unizar22b.com
+  DirectoryIndex index.html
+  SSLEngine On
+  SSLCertificateFile /certs/unizar22.crt
+  SSLCertificateKeyFile /certs/unizar22.key
+</VirtualHost>
+
+<VirtualHost *:80>
+  DocumentRoot /var/www/unizar22
+  ServerName www.unizar22.com
+  DirectoryIndex index_red.html
+</VirtualHost>
+
+# Set the following global entry to suppress an annoying warning message
+ServerName localhost
+```
+
+> **Note**
+> `/var/www/unizar22` es una copia del directorio `/var/www/bank32` que se encontraba creado en el contenedor.
+
+Al igual que en el caso anterior, activamos el sitio `unizar22_apache_ssl`:
+
+```bash
+a2enmod ssl #  Enable the SSL module
+a2ensite unizar22_apache_ssl #  Enable the sites described in this file
+```
+
+Si tenemos algún error con el servidor apache hemos dejado algunos comandos de utilidad al final de esta sección.
+
+Una vez activados los sitios, navegaremos a la dirección `https://www.unizar22.com` y veremos que nos aparece un mensaje de error de seguridad. Para solucionarlo debemos de importar el certificado en el navegador como hicimos en el caso [anterior](#bank32com).
+
+### Apache2
+
+Consultar el estado del servicio `apache2`:
+
+```bash
+service apache2 status
+```
+
+Iniciar el servicio `apache2`:
+
+```bash
+service apache2 start
+```
+
+Parar el servicio `apache2`:
+
+```bash
+service apache2 stop
+```
+
+Reiniciar el servicio `apache2`:
+
+```bash
+service apache2 restart
 ```
 
 ## Tarea 5
@@ -121,7 +307,6 @@ Lanzamiento de un ataque Man-In-The-Middle (MITM).
 Lanzamiento de un ataque Man-In-The-Middle con una CA comprometida.
 
 ## Conclusiones
-
 
 ## Referencias
 
