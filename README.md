@@ -218,8 +218,8 @@ Desde firefox podemos hacerlo desde `Opciones -> Privacidad y seguridad -> Certi
 Es importante que a la hora de importar el certificado, seleccionemos la opción: `Confíe en esta CA para identificar los sitios web`.
 
 #### Output
-![MITM Image](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/bank32-insecure.png)
-![MITM Image](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/bank32-secure.png)
+![bank32-insecure](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/bank32-insecure.png)
+![bank32-secure](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/bank32-secure.png)
 
 ---
 
@@ -345,6 +345,10 @@ A la hora de acceder a la página maliciosa, se puede observar que el navegador 
 
 ![MITM Image](https://i.imgur.com/i2PzEgJ.png)
 
+### Output
+![mitm-server-1-warning](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/mitm-server-1-warning.png)
+![mitm-server-1](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/mitm-server-1.png)
+
 ## Tarea 6
 Lanzamiento de un ataque Man-In-The-Middle con una CA comprometida.
 
@@ -397,6 +401,9 @@ a2ensite mitm-ssl  # Enable the sites described in this file
 
 
 Este experimento se puede realizar para cualquier página web, basta con repetir los pasos con el nombre de dominio de la página a la que se quiere acceder.
+
+### Output
+![mitm-server-2](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/mitm-server-2.png)
 
 ## Conclusiones
 
