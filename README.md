@@ -304,7 +304,11 @@ service apache2 restart
 ```
 
 ## Tarea 5
-Lanzamiento de un ataque Man-In-The-Middle (MITM)."
+Lanzamiento de un ataque Man-In-The-Middle `MITM`.
+
+Un ataque MITM consiste en interceptar el tráfico entre dos entidades para modificarlo o leerlo. En este caso vamos a realizar un ataque MITM entre el cliente y nuestro servidor web.
+
+![MITM Image](https://i.imgur.com/i2PzEgJ.png)
 
 Para realizar este ataque, primero debemos de generar un certificado autofirmado para el servidor `apache2` para no perder mucho tiempo, reutilizaremos el certificado del banco `bank32.com`.
 
@@ -342,8 +346,6 @@ Para poder observar los resultados, debemos de modificar el fichero `/etc/hosts`
 ```
 
 A la hora de acceder a la página maliciosa, se puede observar que el navegador indica que la página es no segura
-
-![MITM Image](https://i.imgur.com/i2PzEgJ.png)
 
 ### Output
 ![mitm-server-1-warning](https://github.com/Hec7or-Uni/seginf-pr-2/blob/main/assets/mitm-server-1-warning.png)
