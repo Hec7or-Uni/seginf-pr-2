@@ -339,7 +339,7 @@ Para poder observar los resultados, debemos de modificar el fichero `/etc/hosts`
 
 A la hora de acceder a la página maliciosa, se puede observar que el navegador indica que la página es no segura
 
-![MITM Image](https://imgur.com/a/N72pmVV)
+![MITM Image](https://i.imgur.com/i2PzEgJ.png)
 
 ## Tarea 6
 Lanzamiento de un ataque Man-In-The-Middle con una CA comprometida.
